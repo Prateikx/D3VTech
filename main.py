@@ -1,9 +1,8 @@
 from fastapi import FastAPI, HTTPException
-from datetime import datetime
 import mariadb
 from password import *
 from typing import List
-import json
+
 
 # Load database configuration
 config = {
@@ -16,28 +15,21 @@ config = {
 conn = mariadb.connect(**config)
 cur = conn.cursor()
 
-# Open the JSON file
-with open('ELECTRONIC-CATALOG.json', 'r') as file:
-    # Load the contents of the file into a Python object
-    data = json.load(file)
-
-# Access the contents of the JSON file
-# print(data)
-
+# Define FastAPI routes
 app = FastAPI()
 
 @app.get('/')
 def index():
     return {'Home': 'Page'}
 
-@app.get("/products")
+@app.get("/list_products")
 async def list_products() -> List:
     sql = """SELECT * FROM products;"""
     cur.execute(sql)
     products = cur.fetchall()
     return products
 
-@app.get("/categories")
+@app.get("/list_categories")
 async def list_categories() -> List:
     sql = """SELECT DISTINCT category FROM products;"""
     cur.execute(sql)
@@ -45,7 +37,7 @@ async def list_categories() -> List:
     return categories
 
 
-@app.get("/products/{sku}")
+@app.get("/get_product/{sku}")
 async def get_product(sku: str):
     vals = (sku,)
     sql = """SELECT * FROM products WHERE sku = %s;"""
@@ -57,7 +49,7 @@ async def get_product(sku: str):
         raise HTTPException(status_code=404, detail="Product not found")
 
 
-@app.put("/update/{sku}/{product}", description="which sku's product you want to change?")
+@app.put("/update_product/{sku}/{product}", description="which sku's product you want to change?")
 async def update_product(sku: str, product: str):
     vals = (sku, product)
     sql = """SELECT * FROM products WHERE sku = %s"""
@@ -77,5 +69,32 @@ async def update_product(sku: str, product: str):
     else:
         raise HTTPException(status_code=404, detail="Product not found")
 
+@app.post("/create_product/{name}/{category}/{sku}/{price}/{quantity}")
+async def create_product(name: str, category: str, sku: str, price: float, quantity: int):
+    sql = """
+        INSERT INTO products (name, category, sku, price, quantity)
+        VALUES (%s, %s, %s, %s, %s)
+        """
+    vals = (name, category, sku, price, quantity)
+    cur.execute(sql, vals)
+    conn.commit()
+    val = (sku,)
+    sql2 = """SELECT * FROM products WHERE sku = %s"""
+    cur.execute(sql2, val)
+    conn.commit()
+    new_product = cur.fetchone()
+    return new_product
+#  Disadvantage: The above endpoint can add multiple products of same values
 
-    
+@app.delete("/delete_product/{sku}")
+async def delete_product(sku: str):
+    sql = """SELECT * FROM products WHERE sku = %s"""
+    cur.execute(sql, (sku,))
+    product = cur.fetchone()
+    if product:
+        sql = """DELETE FROM products WHERE sku = %s"""
+        cur.execute(sql, (sku,))
+        conn.commit()
+        return {"message": f"Product with sku {sku} has been deleted successfully."}
+    else:
+        raise HTTPException(status_code=404, detail="Product not found.")

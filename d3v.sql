@@ -14,8 +14,6 @@ CREATE TABLE products (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
-
-
 -- Sku = Stock Keeping Unit
 
 -- Create another table users
