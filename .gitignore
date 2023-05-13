@@ -1,0 +1,11 @@
+# Ignore virtual environment files
+venv/
+env/
+.venv/
+__pycache__/
+Include/
+Lib/
+Scripts
+temp.py
+
+
