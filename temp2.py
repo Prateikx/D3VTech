@@ -1,4 +1,4 @@
-
+# Step 1
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from passlib.context import CryptContext
@@ -41,6 +41,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 secret_key = secrets.token_hex(32)
 print(secret_key)
 
+# Step 2
 load_dotenv()
 
 # JWT Configuration
@@ -57,6 +58,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # Configure OAuth2
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
+# Step 3
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
@@ -125,28 +127,7 @@ async def list_categories() -> List:
     categories = [category[0] for category in cur.fetchall()]
     return categories
 
-@app.post("/create_product", description="Create a new product")
-async def create_product(name: str, category: str, sku: str, price: float, quantity: int, current_user: str = Depends(get_current_user)):
-    # Check if the current user is authorized to perform the creation
-    if current_user != "admin":
-        raise HTTPException(status_code=403, detail="Unauthorized to perform this action")
-
-    sql = """
-        INSERT INTO products (name, category, sku, price, quantity)
-        VALUES (%s, %s, %s, %s, %s)
-        """
-    vals = (name, category, sku, price, quantity)
-    cur.execute(sql, vals)
-    conn.commit()
-
-    # Retrieve the created product from the database
-    sql2 = """SELECT * FROM products WHERE sku = %s"""
-    cur.execute(sql2, (sku,))
-    new_product = cur.fetchone()
-
-    return new_product
-
-
+# Step 4
 # Update the update_product endpoint
 @app.put("/update_product/{sku}/{product}", description="which sku's product you want to change?")
 async def update_product(sku: str, product: str, current_user: str = Depends(get_current_user)):
