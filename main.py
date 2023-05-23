@@ -28,15 +28,10 @@ cur = conn.cursor()
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-
 class UserCreate(BaseModel):
     name: str
     email: str
     password: str
-
-
-# Password hashing context
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 secret_key = secrets.token_hex(32)
 print(secret_key)
@@ -51,8 +46,6 @@ JWT_EXPIRATION = timedelta(minutes=30)
 # Configure FastAPI app
 app = FastAPI()
 
-# Configure password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Configure OAuth2
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
@@ -83,15 +76,23 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         raise HTTPException(status_code=401, detail="Invalid authentication credentials")
     return username
 
+
 def create_user(user: UserCreate):
     # Hash the password
     hashed_password = pwd_context.hash(user.password)
-
-    # Insert user into the database
-    sql = "INSERT INTO users (name, email, password) VALUES (?, ?, ?)"
     values = (user.name, user.email, hashed_password)
-    cur.execute(sql, values)
-    conn.commit()
+    
+    sql = "SELECT * FROM users WHERE email = ?"
+    cur.execute(sql, (user.email,))
+    existing_user = cur.fetchone()
+    
+    if existing_user:
+        raise HTTPException(status_code=400, detail="User already exists")
+    else:
+        # Insert user into the database
+        sql = "INSERT INTO users (name, email, password) VALUES (?, ?, ?)"
+        cur.execute(sql, values)
+        conn.commit()
 
     # Return the created user
     return {
