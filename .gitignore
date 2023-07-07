@@ -8,6 +8,11 @@ Lib/
 Scripts
 temp.py
 Projects/
+.vscode
+Scripts/
+Lib/
+__pycache__/
+
 
 
 
